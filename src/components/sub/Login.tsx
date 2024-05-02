@@ -7,7 +7,7 @@ import {
   TextField,
 } from "@mui/material/";
 import { useNavigate } from "react-router-dom";
-import { postloginUser , getUserList } from "../../common/api/inter_process.js";
+import { postloginUser , getUserList,checkloginUser,get_user_id } from "../../common/api/inter_process.js";
 import theme from "../theme/theme.tsx";
 import React, { useEffect, useState } from "react";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -24,10 +24,25 @@ const Login = () => {
     if (User_ID === "" || password === "" || 
     UserList.some((value) => User_ID === value.User_ID))
       return;
-    if(await postloginUser(User_ID,password)===0){
+
+    if(await checkloginUser(User_ID,password)===200){
       //登録成功
-      
-    }else{
+      const data= await postloginUser(User_ID,password);
+
+      //会員メニュー画面に移動
+      if(await get_user_id(data)==="admin"){
+        //管理者画面
+        navigate("/Admin_menu",{state: {message: data}});
+      }else{
+      navigate("/Menu",{state: {message: data}});
+      }
+    }else if(await checkloginUser(User_ID,password)===403){
+      var elm = document.getElementById("400code");
+      elm.style.display = '';
+      elm.textContent =
+          "※ログインの試行回数が上限に達しました";
+    }
+    else{
       //登録失敗
       //表示処理
       var elm = document.getElementById("400code");
@@ -35,12 +50,7 @@ const Login = () => {
     }
   };
 
-  useEffect(() => {
-    (async () => {
-      const list = await getUserList();
-      setUserList(list);
-    })();
-  }, []);
+  
   
   return (
     <Container maxWidth="xl">
@@ -50,7 +60,7 @@ const Login = () => {
       </Paper>
       <Typography 
       sx={{ color:"red",fontSize:"2em"}}
-      ><span id="400code"  style={{display:"none"}}>※問題が発生し登録できませんでした</span></Typography>
+      ><span id="400code"  style={{display:"none"}}>※利用者IDまたはパスワードが間違っています</span></Typography>
       <Box sx={{ margin: "80px" }} display="flex">
       
         <Typography sx={theme.Midiam_label}>利用者ID</Typography>
